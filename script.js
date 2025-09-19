@@ -1,106 +1,66 @@
-const searchInput = document.querySelector(".search-input");
-const locationButton = document.querySelector(".location-button");
-const currentWeatherDiv = document.querySelector(".current-weather");
-const hourlyWeather = document.querySelector(".hourly-weather .weather-list");
-
-const API_KEY = "87edd0958ee2468083204632251809"; // API key
-
-// Weather codes for mapping to custom icons
-const weatherCodes = {
-  clear: [1000],
-  clouds: [1003, 1006, 1009],
-  mist: [1030, 1135, 1147],
-  rain: [1063, 1150, 1153, 1168, 1171, 1180, 1183, 1198, 1201, 1240, 1243, 1246, 1273, 1276],
-  moderate_heavy_rain: [1186, 1189, 1192, 1195, 1243, 1246],
-  snow: [1066, 1069, 1072, 1114, 1117, 1204, 1207, 1210, 1213, 1216, 1219, 1222, 1225, 1237, 1249, 1252, 1255, 1258, 1261, 1264, 1279, 1282],
-  thunder: [1087, 1279, 1282],
-  thunder_rain: [1273, 1276],
-}
-
-// Display the hourly forecast for the next 24 hours
-const displayHourlyForecast = (hourlyData) => {
-  const currentHour = new Date().setMinutes(0, 0, 0);
-  const next24Hours = currentHour + 24 * 60 * 60 * 1000;
-
-  // Filter the hourly data to only include the next 24 hours
-  const next24HoursData = hourlyData.filter(({ time }) => {
-    const forecastTime = new Date(time).getTime();
-    return forecastTime >= currentHour && forecastTime <= next24Hours;
-  });
-
-  // Generate HTML for each hourly forecast and display it
-  hourlyWeather.innerHTML = next24HoursData.map((item) => {
-    const temperature = Math.floor(item.temp_c);
-    const time = item.time.split(' ')[1].substring(0, 5);
-    const weatherIcon = Object.keys(weatherCodes).find(icon => weatherCodes[icon].includes(item.condition.code));
-
-    return `<li class="weather-item">
-            <p class="time">${time}</p>
-            <img src="icons/${weatherIcon}.svg" class="weather-icon">
-            <p class="temperature">${temperature}°</p>
-          </li>`;
-  }).join('');
-};
-
-// Fetch and display weather details
-const getWeatherDetails = async (API_URL) => {
-  window.innerWidth <= 768 && searchInput.blur();
-  document.body.classList.remove("show-no-results");
+async function getWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
 
   try {
-    // Fetch weather data from the API and parse the response as JSON
-    const response = await fetch(API_URL);
-    const data = await response.json();
+    const res = await fetch(url);
+    const data = await res.json();
 
-    // Extract current weather details
-    const temperature = Math.floor(data.current.temp_c);
-    const description = data.current.condition.text;
-    const weatherIcon = Object.keys(weatherCodes).find(icon => weatherCodes[icon].includes(data.current.condition.code));
+    const current = data.current_weather;
+    const city = await getCityName(lat, lon);
 
-    // Update the current weather display
-    currentWeatherDiv.querySelector(".weather-icon").src = `icons/${weatherIcon}.svg`;
-    currentWeatherDiv.querySelector(".temperature").innerHTML = `${temperature}<span>°C</span>`;
-    currentWeatherDiv.querySelector(".description").innerText = description;
+    document.getElementById("currentWeather").innerHTML = `
+      <h2 class="text-2xl font-bold mb-2">${city}</h2>
+      <p class="text-5xl font-bold">${Math.round(current.temperature)}°C</p>
+      <p class="text-lg">💨 Vento: ${Math.round(current.windspeed)} km/h</p>
+      <p class="text-lg">💧 Umidade: ${data.hourly.relative_humidity_2m[0]}%</p>
+    `;
 
-    // Combine hourly data from today and tomorrow
-    const combinedHourlyData = [...data.forecast?.forecastday[0]?.hour, ...data.forecast?.forecastday[1]?.hour];
+    const hourlyHTML = data.hourly.time.slice(0, 6).map((hora, i) => `
+      <div class="bg-white bg-opacity-20 p-3 rounded-xl text-center">
+        <p class="font-semibold">${new Date(hora).getHours()}h</p>
+        <p>${Math.round(data.hourly.temperature_2m[i])}°C</p>
+        <p class="text-sm">💧 ${data.hourly.relative_humidity_2m[i]}%</p>
+      </div>
+    `).join("");
+    document.getElementById("hourlyForecast").innerHTML = hourlyHTML;
 
-    searchInput.value = data.location.name;
-    displayHourlyForecast(combinedHourlyData);
-  } catch (error) {
-    document.body.classList.add("show-no-results");
+    const dailyHTML = data.daily.time.slice(0, 5).map((dia, i) => `
+      <div class="bg-white bg-opacity-20 p-3 rounded-xl text-center">
+        <p class="font-semibold">${new Date(dia).toLocaleDateString("pt-BR", { weekday: "short" })}</p>
+        <p>🌡️ Max: ${Math.round(data.daily.temperature_2m_max[i])}°C</p>
+        <p>❄️ Min: ${Math.round(data.daily.temperature_2m_min[i])}°C</p>
+      </div>
+    `).join("");
+    document.getElementById("dailyForecast").innerHTML = dailyHTML;
+
+  } catch (err) {
+    console.error("Erro ao buscar clima:", err);
+    document.getElementById("currentWeather").innerHTML = `<p>Erro ao buscar clima.</p>`;
   }
 }
 
-// Set up the weather request for a specific city
-const setupWeatherRequest = (cityName) => {
-  const API_URL = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${cityName}&days=2`;
-  getWeatherDetails(API_URL);
+async function getCityName(lat, lon) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+    const data = await res.json();
+    return data.address.city || data.address.town || data.address.village || "Localização";
+  } catch (err) {
+    console.error("Erro ao buscar cidade:", err);
+    return "Localização";
+  }
 }
 
-// Handle user input in the search box
-searchInput.addEventListener("keyup", (e) => {
-  const cityName = searchInput.value.trim();
-
-  if (e.key == "Enter" && cityName) {
-    setupWeatherRequest(cityName);
+function getByLocation() {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(position => {
+      getWeather(position.coords.latitude, position.coords.longitude);
+    }, error => {
+      console.error("Erro de localização:", error);
+      document.getElementById("currentWeather").innerHTML = `<p>Não foi possível acessar sua localização.</p>`;
+    });
+  } else {
+    document.getElementById("currentWeather").innerHTML = `<p>Seu navegador não suporta geolocalização.</p>`;
   }
-});
+}
 
-// Get user's coordinates and fetch weather data for the current location
-locationButton.addEventListener("click", () => {
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const { latitude, longitude } = position.coords;
-      const API_URL = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${latitude},${longitude}&days=2`;
-      getWeatherDetails(API_URL);
-      window.innerWidth >= 768 && searchInput.focus();
-    },
-    () => {
-      alert("Location access denied. Please enable permissions to use this feature.");
-    }
-  );
-});
-
-// Initial weather request for London as the default city
-setupWeatherRequest("London");
+window.onload = () => getByLocation();

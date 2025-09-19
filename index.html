@@ -1,50 +1,45 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QUE Baita Clima App</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <link rel="stylesheet" href="style.css">
-    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Que Baita Clima</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1e3a8a">
+  <link rel="icon" href="icons/icon-192.png">
 </head>
-<body>
-    <div class="container1">
-        <h1>Que Baita Clima</h1>
-    </div> 
-    <div class="container">
-        <div class="search-section">
-            <div class="input-wrapper">
-                <span class="material-symbols-rounded"></span>
-                <input type="search" placeholder="Cidade" class="search-input">
-            </div>
-            <button class="location-button">
-                <span class="material-symbols-rouded">X</span>
-            </button>
-        </div>
+<body class="bg-gradient-to-br from-blue-400 to-blue-700 min-h-screen flex flex-col items-center justify-start text-white">
 
-        <div class="no-results">
-            <img src="icons/no-result.svg" alt="No results found" class="icon">
-            <h3 class="title">Something went wrong!</h3>
-            <p class="message">We're unable to retrieve the weather detail. enure you've entered a valid cit or try again later. </p>
-        </div> 
+  <header class="p-6 text-center">
+    <h1 class="text-3xl font-bold">🌤️ Que Baita Clima</h1>
+    <p class="text-sm">Versão Gaúcha do RS</p>
+  </header>
 
-        <div class="weather-section">
-            <div class="current-weather">
-                <img src="icons/no-result.svg" class="weather-icon">
-                <h2 class="temperature">00<span>ºC</span></h2>
-                <h5 class="description">weather description</h5>
-        </div>
+  <main class="w-full max-w-2xl bg-white bg-opacity-20 backdrop-blur-md rounded-2xl shadow-xl p-6">
+    <!-- Clima Atual -->
+    <section id="currentWeather" class="text-center mb-6">
+      <h2 class="text-xl font-semibold mb-2">Clima Atual</h2>
+      <p>Carregando...</p>
+    </section>
 
-        <div class="hourly-weather">
-            <ul class="hourly-weather"></ul>
-        </div>    
-      </div>
-    </div>
-    
-    <script src="script.js"></script>
+    <!-- Previsão Horária -->
+    <section>
+      <h2 class="text-xl font-semibold mb-2 text-center">Próximas Horas</h2>
+      <div id="hourlyForecast" class="grid grid-cols-3 gap-4"></div>
+    </section>
 
+    <!-- Previsão Diária -->
+    <section class="mt-6">
+      <h2 class="text-xl font-semibold mb-2 text-center">Próximos Dias</h2>
+      <div id="dailyForecast" class="grid grid-cols-2 gap-4"></div>
+    </section>
+  </main>
 
-    
+  <footer class="mt-6 text-sm opacity-75">
+    Desenvolvido por Ricardo Dorneles Fontoura 🚀
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
