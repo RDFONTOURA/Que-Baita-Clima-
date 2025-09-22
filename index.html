@@ -1,45 +1,36 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Que Baita Clima</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌤️Baita Clima</title>
+  <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e3a8a">
-  <link rel="icon" href="icons/icon-192.png">
 </head>
-<body class="bg-gradient-to-br from-blue-400 to-blue-700 min-h-screen flex flex-col items-center justify-start text-white">
-
-  <header class="p-6 text-center">
-    <h1 class="text-3xl font-bold">🌤️ Que Baita Clima</h1>
-    <p class="text-sm">Versão Gaúcha do RS</p>
-  </header>
-
-  <main class="w-full max-w-2xl bg-white bg-opacity-20 backdrop-blur-md rounded-2xl shadow-xl p-6">
-    <!-- Clima Atual -->
-    <section id="currentWeather" class="text-center mb-6">
-      <h2 class="text-xl font-semibold mb-2">Clima Atual</h2>
-      <p>Carregando...</p>
-    </section>
-
-    <!-- Previsão Horária -->
-    <section>
-      <h2 class="text-xl font-semibold mb-2 text-center">Próximas Horas</h2>
-      <div id="hourlyForecast" class="grid grid-cols-3 gap-4"></div>
-    </section>
-
-    <!-- Previsão Diária -->
-    <section class="mt-6">
-      <h2 class="text-xl font-semibold mb-2 text-center">Próximos Dias</h2>
-      <div id="dailyForecast" class="grid grid-cols-2 gap-4"></div>
-    </section>
-  </main>
-
-  <footer class="mt-6 text-sm opacity-75">
-    Desenvolvido por Ricardo Dorneles Fontoura 🚀
-  </footer>
-
+<body>
+  <div class="app">
+    <header>
+      <h1>🌤️Que Baita Clima Gaucho</h1>
+      <p id="location">Buscando sua localização...</p>
+    </header>
+    <main>
+      <section class="current-weather">
+        <h2>Clima Atual</h2>
+        <div id="weather-icon" class="icon"></div>
+        <p id="temperature"></p>
+        <p id="description"></p>
+        <p id="details"></p>
+      </section>
+      <section class="forecast">
+        <h2>Previsão</h2>
+        <div id="forecast"></div>
+      </section>
+      <section class="alert">
+        <h2>⚠️ Alerta</h2>
+        <p id="alert-message">Sem alertas no momento.</p>
+      </section>
+    </main>
+  </div>
   <script src="script.js"></script>
 </body>
 </html>

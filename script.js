@@ -1,66 +1,92 @@
+function traduzirDescricao(desc) {
+  const mapa = {
+    "sunny": "Ensolarado",
+    "clear": "Limpo",
+    "partly cloudy": "Parcialmente nublado",
+    "cloudy": "Nublado",
+    "overcast": "Encoberto",
+    "light rain": "Chuva leve",
+    "moderate rain": "Chuva moderada",
+    "heavy rain": "Chuva forte",
+    "snow": "Neve",
+    "thunder": "Trovoada",
+    "storm": "Tempestade",
+    "fog": "Nevoeiro"
+  };
+  let key = desc.toLowerCase();
+  return mapa[key] || desc;
+}
+
+function getWeatherIcon(desc) {
+  desc = desc.toLowerCase();
+  if (desc.includes("sun")) return "☀️";
+  if (desc.includes("clear")) return "🌞";
+  if (desc.includes("cloud")) return "☁️";
+  if (desc.includes("rain")) return "🌧️";
+  if (desc.includes("snow")) return "❄️";
+  if (desc.includes("storm") || desc.includes("thunder")) return "⛈️";
+  if (desc.includes("fog")) return "🌫️";
+  return "🌤️";
+}
+
 async function getWeather(lat, lon) {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+  const url = `https://wttr.in/${lat},${lon}?format=j1`;
+  const response = await fetch(url);
+  const data = await response.json();
+  return data;
+}
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    const current = data.current_weather;
-    const city = await getCityName(lat, lon);
-
-    document.getElementById("currentWeather").innerHTML = `
-      <h2 class="text-2xl font-bold mb-2">${city}</h2>
-      <p class="text-5xl font-bold">${Math.round(current.temperature)}°C</p>
-      <p class="text-lg">💨 Vento: ${Math.round(current.windspeed)} km/h</p>
-      <p class="text-lg">💧 Umidade: ${data.hourly.relative_humidity_2m[0]}%</p>
-    `;
-
-    const hourlyHTML = data.hourly.time.slice(0, 6).map((hora, i) => `
-      <div class="bg-white bg-opacity-20 p-3 rounded-xl text-center">
-        <p class="font-semibold">${new Date(hora).getHours()}h</p>
-        <p>${Math.round(data.hourly.temperature_2m[i])}°C</p>
-        <p class="text-sm">💧 ${data.hourly.relative_humidity_2m[i]}%</p>
-      </div>
-    `).join("");
-    document.getElementById("hourlyForecast").innerHTML = hourlyHTML;
-
-    const dailyHTML = data.daily.time.slice(0, 5).map((dia, i) => `
-      <div class="bg-white bg-opacity-20 p-3 rounded-xl text-center">
-        <p class="font-semibold">${new Date(dia).toLocaleDateString("pt-BR", { weekday: "short" })}</p>
-        <p>🌡️ Max: ${Math.round(data.daily.temperature_2m_max[i])}°C</p>
-        <p>❄️ Min: ${Math.round(data.daily.temperature_2m_min[i])}°C</p>
-      </div>
-    `).join("");
-    document.getElementById("dailyForecast").innerHTML = dailyHTML;
-
-  } catch (err) {
-    console.error("Erro ao buscar clima:", err);
-    document.getElementById("currentWeather").innerHTML = `<p>Erro ao buscar clima.</p>`;
+function setAlert(tempC, desc) {
+  const alertMessage = document.getElementById("alert-message");
+  if (parseInt(tempC) >= 30) {
+    alertMessage.textContent = "Tá um calorão! Toma uma água, tchê! 💧";
+  } else if (desc.includes("rain")) {
+    alertMessage.textContent = "Vai chover! Não esquece o guarda-chuva, guri! ☔";
+  } else {
+    alertMessage.textContent = "Sem alertas no momento.";
   }
 }
 
-async function getCityName(lat, lon) {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
-    const data = await res.json();
-    return data.address.city || data.address.town || data.address.village || "Localização";
-  } catch (err) {
-    console.error("Erro ao buscar cidade:", err);
-    return "Localização";
-  }
-}
-
-function getByLocation() {
+async function showWeather() {
   if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(position => {
-      getWeather(position.coords.latitude, position.coords.longitude);
-    }, error => {
-      console.error("Erro de localização:", error);
-      document.getElementById("currentWeather").innerHTML = `<p>Não foi possível acessar sua localização.</p>`;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const data = await getWeather(lat, lon);
+      
+      document.getElementById("location").textContent = data.nearest_area[0].areaName[0].value;
+
+      const current = data.current_condition[0];
+      const desc = current.weatherDesc[0].value;
+
+      document.getElementById("weather-icon").textContent = getWeatherIcon(desc);
+      document.getElementById("temperature").textContent = current.temp_C + "°C";
+      document.getElementById("description").textContent = traduzirDescricao(desc);
+      document.getElementById("details").textContent = 
+        `Vento: ${current.windspeedKmph} km/h | Umidade: ${current.humidity}%`;
+
+      setAlert(current.temp_C, desc.toLowerCase());
+
+      const forecastDiv = document.getElementById("forecast");
+      forecastDiv.innerHTML = "";
+      data.weather.forEach((day, index) => {
+        const div = document.createElement("div");
+        div.classList.add("forecast-day");
+        const date = new Date();
+        date.setDate(date.getDate() + index);
+        const descDay = day.hourly[4].weatherDesc[0].value;
+        div.innerHTML = `
+          <h4>${date.toLocaleDateString("pt-BR", { weekday: "long" })}</h4>
+          <div class="icon">${getWeatherIcon(descDay)}</div>
+          <p>${day.avgtempC}°C</p>
+          <p>${traduzirDescricao(descDay)}</p>
+        `;
+        forecastDiv.appendChild(div);
+      });
     });
   } else {
-    document.getElementById("currentWeather").innerHTML = `<p>Seu navegador não suporta geolocalização.</p>`;
+    alert("Não foi possível acessar a localização.");
   }
 }
 
-window.onload = () => getByLocation();
+showWeather();
